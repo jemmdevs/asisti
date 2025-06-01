@@ -18,20 +18,41 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
-            <Link href="/about" className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-text)]">
+            <Link href="/acerca-de" className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-text)]">
               Acerca de
             </Link>
-            <Link href="/privacy" className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-text)]">
+            <Link href="/politica-privacidad" className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-text)]">
               Política de Privacidad
             </Link>
-            <Link href="/terms" className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-text)]">
+            <Link href="/terminos-servicio" className="text-sm text-[var(--color-text-light)] hover:text-[var(--color-text)]">
               Términos de Servicio
             </Link>
           </div>
         </div>
         <div className="mt-6 border-t border-gray-200 pt-6 text-center">
+          <div className="flex justify-center space-x-4 mb-3">
+            <a 
+              href="https://github.com/jemmdevs" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[var(--color-text-light)] hover:text-[var(--color-primary)]"
+            >
+              GitHub
+            </a>
+            <a 
+              href="https://portfolio-jemmdevs.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[var(--color-text-light)] hover:text-[var(--color-primary)]"
+            >
+              Portfolio
+            </a>
+          </div>
           <p className="text-sm text-[var(--color-text-light)]">
             &copy; {currentYear} Asisti. Todos los derechos reservados.
+          </p>
+          <p className="text-sm text-[var(--color-text-light)] mt-1">
+            Desarrollado por <a href="https://github.com/jemmdevs" className="text-[var(--color-primary)] hover:underline" target="_blank" rel="noopener noreferrer">Jemmdevs</a>
           </p>
         </div>
       </div>

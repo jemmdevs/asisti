@@ -163,7 +163,7 @@ export default function Home() {
             <Link href="/auth/register" className="bg-white text-[var(--color-accent)] px-6 py-3 rounded-md font-medium hover:bg-opacity-90 transition-colors">
               Registrarse
             </Link>
-            <Link href="/auth/login" className="bg-transparent border border-white text-white px-6 py-3 rounded-md font-medium hover:bg-white hover:bg-opacity-10 transition-colors">
+            <Link href="/auth/login" className="bg-transparent border border-white text-white px-6 py-3 rounded-md font-medium hover:bg-white hover:text-[var(--color-accent)] transition-colors">
               Iniciar Sesión
             </Link>
           </div>
