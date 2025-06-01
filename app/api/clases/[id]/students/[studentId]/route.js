@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { connectDB } from '@/lib/mongodb';
+import connectDB from '@/lib/db';
+import mongoose from 'mongoose';
 import { ObjectId } from 'mongodb';
 
 // Endpoint para eliminar un alumno de una clase
@@ -35,7 +36,8 @@ export async function DELETE(request, { params }) {
       );
     }
     
-    const { db } = await connectDB();
+    await connectDB();
+    const db = mongoose.connection.db;
     
     // Verificar que la clase exista y pertenezca al profesor
     const clase = await db.collection('classes').findOne({
