@@ -156,7 +156,7 @@ export default function ClasesPage() {
                 <h2 className="text-xl font-bold text-[var(--color-text)] mb-2">{clase.name}</h2>
                 <div className="flex space-x-2">
                   <button 
-                    onClick={() => router.push(`/clases/${clase._id}/editar`)}
+                    onClick={() => router.push(`/clases/editar/${clase._id}`)}
                     className="p-1 text-[var(--color-text-light)] hover:text-[var(--color-primary-dark)]"
                     title="Editar clase"
                   >

@@ -28,6 +28,8 @@ export default function HistorialAsistenciaPage() {
     faltas: 0,
     porcentaje: 0
   });
+  const [cambiandoAsistencia, setCambiandoAsistencia] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     // Redirigir si no está autenticado
@@ -175,29 +177,86 @@ export default function HistorialAsistenciaPage() {
   };
 
   const handleExportarCSV = () => {
-    if (asistencias.length === 0) return;
+    if (!asistencias.length) return;
     
-    // Crear contenido CSV
-    let csvContent = 'Fecha,Alumno,Estado\n';
+    // Preparar datos para CSV
+    const data = asistencias.map(a => ({
+      fecha: format(parseISO(a.date), 'dd/MM/yyyy', { locale: es }),
+      hora: format(parseISO(a.date), 'HH:mm', { locale: es }),
+      alumno: a.student?.name || 'Desconocido',
+      clase: a.class?.name || 'Desconocida',
+      estado: 'Asistió'
+    }));
     
-    asistencias.forEach(asistencia => {
-      const fecha = format(parseISO(asistencia.date), 'dd/MM/yyyy');
-      const alumno = asistencia.student?.name || 'Desconocido';
-      const estado = 'Asistió';
-      
-      csvContent += `${fecha},${alumno},${estado}\n`;
-    });
+    // Crear CSV
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(row => Object.values(row).join(','));
+    const csv = [headers, ...rows].join('\n');
     
     // Crear y descargar archivo
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `asistencias_${format(new Date(), 'yyyyMMdd')}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute('download', `asistencia_${selectedClase}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const toggleAsistencia = async (asistenciaId, estadoActual) => {
+    if (!session?.user?.role === 'profesor' || cambiandoAsistencia) return;
+    
+    try {
+      setCambiandoAsistencia(true);
+      
+      const response = await fetch(`/api/asistencia/${asistenciaId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          presente: !estadoActual 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al cambiar el estado de asistencia');
+      }
+      
+      // Actualizar la lista de asistencias
+      setAsistencias(asistencias.map(a => {
+        if (a._id === asistenciaId) {
+          return { ...a, presente: !estadoActual };
+        }
+        return a;
+      }));
+      
+      // Actualizar estadísticas
+      if (estadoActual) { // Si estaba presente y ahora no
+        setEstadisticas({
+          ...estadisticas,
+          asistencias: estadisticas.asistencias - 1,
+          faltas: estadisticas.faltas + 1,
+          porcentaje: Math.round(((estadisticas.asistencias - 1) / estadisticas.total) * 100)
+        });
+      } else { // Si estaba ausente y ahora presente
+        setEstadisticas({
+          ...estadisticas,
+          asistencias: estadisticas.asistencias + 1,
+          faltas: estadisticas.faltas - 1,
+          porcentaje: Math.round(((estadisticas.asistencias + 1) / estadisticas.total) * 100)
+        });
+      }
+      
+      setSuccessMessage(`Estado de asistencia actualizado correctamente`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error al cambiar estado de asistencia:', error);
+      setError(error.message);
+    } finally {
+      setCambiandoAsistencia(false);
+    }
   };
 
   if (status === 'loading' || (loading && !asistencias.length)) {
@@ -387,6 +446,13 @@ export default function HistorialAsistenciaPage() {
             </div>
           </div>
           
+          {/* Mensaje de éxito */}
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+              <p>{successMessage}</p>
+            </div>
+          )}
+          
           {/* Tabla de asistencias */}
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
             <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">Registros de Asistencia</h2>
@@ -431,9 +497,39 @@ export default function HistorialAsistenciaPage() {
                           </td>
                         )}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Asistió
-                          </span>
+                          {asistencia.presente !== false ? (
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Asistió
+                              </span>
+                              {session?.user?.role === 'profesor' && (
+                                <button 
+                                  onClick={() => toggleAsistencia(asistencia._id, true)}
+                                  disabled={cambiandoAsistencia}
+                                  className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                                  title="Marcar como ausente"
+                                >
+                                  <FiX className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Ausente
+                              </span>
+                              {session?.user?.role === 'profesor' && (
+                                <button 
+                                  onClick={() => toggleAsistencia(asistencia._id, false)}
+                                  disabled={cambiandoAsistencia}
+                                  className="text-green-500 hover:text-green-700 disabled:opacity-50"
+                                  title="Marcar como presente"
+                                >
+                                  <FiCheck className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

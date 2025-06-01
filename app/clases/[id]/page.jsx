@@ -21,6 +21,9 @@ export default function DetalleClasePage({ params }) {
     ultimaSesion: null
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteStudentModal, setShowDeleteStudentModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     // Redirigir si no está autenticado
@@ -119,6 +122,35 @@ export default function DetalleClasePage({ params }) {
 
   const handleVerHistorial = () => {
     router.push(`/asistencia/historial?clase=${id}`);
+  };
+
+  const handleRemoveStudent = (student) => {
+    setSelectedStudent(student);
+    setShowDeleteStudentModal(true);
+  };
+
+  const confirmRemoveStudent = async () => {
+    if (!selectedStudent) return;
+    
+    try {
+      const response = await fetch(`/api/clases/${id}/students/${selectedStudent._id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al eliminar al alumno de la clase');
+      }
+      
+      // Actualizar la lista de alumnos
+      setAlumnos(alumnos.filter(a => a._id !== selectedStudent._id));
+      setSuccessMessage(`${selectedStudent.name} ha sido eliminado de la clase`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setShowDeleteStudentModal(false);
+      setSelectedStudent(null);
+    } catch (error) {
+      console.error('Error al eliminar alumno:', error);
+      setError(error.message);
+    }
   };
 
   if (status === 'loading' || loading) {
@@ -271,6 +303,13 @@ export default function DetalleClasePage({ params }) {
         </div>
       </div>
       
+      {/* Mensaje de éxito */}
+      {successMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          <p>{successMessage}</p>
+        </div>
+      )}
+      
       {/* Lista de alumnos */}
       <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
         <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">Alumnos Inscritos</h2>
@@ -287,9 +326,14 @@ export default function DetalleClasePage({ params }) {
                     Email
                   </th>
                   {isProfesor && (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wider">
-                      Asistencia
-                    </th>
+                    <>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wider">
+                        Asistencia
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-light)] uppercase tracking-wider">
+                        Acciones
+                      </th>
+                    </>
                   )}
                 </tr>
               </thead>
@@ -303,14 +347,25 @@ export default function DetalleClasePage({ params }) {
                       {alumno.email}
                     </td>
                     {isProfesor && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-light)]">
-                        <Link
-                          href={`/asistencia/historial?clase=${id}&alumno=${alumno._id}`}
-                          className="text-[var(--color-primary)] hover:underline"
-                        >
-                          Ver asistencia
-                        </Link>
-                      </td>
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-light)]">
+                          <Link
+                            href={`/asistencia/historial?clase=${id}&alumno=${alumno._id}`}
+                            className="text-[var(--color-primary)] hover:underline"
+                          >
+                            Ver asistencia
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-light)]">
+                          <button
+                            onClick={() => handleRemoveStudent(alumno)}
+                            className="text-red-500 hover:text-red-700"
+                            title="Eliminar alumno de la clase"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </td>
+                      </>
                     )}
                   </tr>
                 ))}
@@ -329,7 +384,7 @@ export default function DetalleClasePage({ params }) {
         )}
       </div>
       
-      {/* Modal de confirmación para eliminar */}
+      {/* Modal de confirmación para eliminar clase */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -346,6 +401,36 @@ export default function DetalleClasePage({ params }) {
               </button>
               <button
                 onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de confirmación para eliminar alumno */}
+      {showDeleteStudentModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-[var(--color-text)] mb-4">¿Eliminar alumno de la clase?</h3>
+            <p className="text-[var(--color-text-light)] mb-6">
+              ¿Estás seguro de que deseas eliminar a <strong>{selectedStudent.name}</strong> de esta clase? 
+              El alumno perderá acceso a la clase y sus registros de asistencia se mantendrán en el historial.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteStudentModal(false);
+                  setSelectedStudent(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmRemoveStudent}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
                 Eliminar
