@@ -1,12 +1,32 @@
 'use client';
 
+import { Suspense } from 'react';
+import { FiArrowLeft, FiCheck, FiClock } from 'react-icons/fi';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { FiArrowLeft, FiCheck, FiClock } from 'react-icons/fi';
 
+// Componente principal que no usa useSearchParams directamente
 export default function RegistrarAsistenciaPage() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <Link href="/dashboard" className="flex items-center text-[var(--color-primary-dark)] hover:underline">
+          <FiArrowLeft className="mr-2" />
+          Volver al dashboard
+        </Link>
+      </div>
+      
+      <Suspense fallback={<div className="text-center py-8">Cargando...</div>}>
+        <RegistrarAsistenciaContent />
+      </Suspense>
+    </div>
+  );
+}
+
+// Componente cliente que usa useSearchParams
+function RegistrarAsistenciaContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
