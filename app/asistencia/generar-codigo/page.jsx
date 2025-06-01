@@ -1,12 +1,33 @@
 'use client';
 
+import { Suspense } from 'react';
+import { FiArrowLeft, FiRefreshCw, FiCopy, FiClock } from 'react-icons/fi';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiArrowLeft, FiRefreshCw, FiCopy, FiClock } from 'react-icons/fi';
-import Link from 'next/link';
 
+// Componente principal que no usa useSearchParams directamente
 export default function GenerarCodigoPage() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <Link href="/clases" className="flex items-center text-[var(--color-primary-dark)] hover:underline">
+          <FiArrowLeft className="mr-2" />
+          Volver a mis clases
+        </Link>
+      </div>
+      
+      <Suspense fallback={<div className="text-center py-8">Cargando...</div>}>
+        <GenerarCodigoContent />
+      </Suspense>
+    </div>
+  );
+}
+
+// Componente cliente que usa useSearchParams
+
+function GenerarCodigoContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
