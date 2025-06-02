@@ -177,7 +177,7 @@ export default function MisClasesPage() {
               
               <div className="mt-6 flex space-x-3">
                 <Link 
-                  href={`/mis-clases/${clase._id}`}
+                  href={`/clases/${clase._id}`}
                   className="flex-1 text-center px-3 py-2 bg-[var(--color-background-light)] text-[var(--color-text)] rounded-md hover:bg-[var(--color-background-dark)]"
                 >
                   Ver Detalles

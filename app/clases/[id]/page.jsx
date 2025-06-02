@@ -316,6 +316,31 @@ export default function DetalleClasePage({ params }) {
             <div className="flex items-center text-[var(--color-text-light)]">
               <FiUsers className="mr-2" />
               <span>{alumnos.length} {alumnos.length === 1 ? 'alumno' : 'alumnos'}</span>
+            </div>
+          </div>
+          
+          <div className="mt-4 md:mt-0">
+            <div className="bg-[var(--color-background-light)] p-4 rounded-md">
+              <p className="text-sm font-medium text-[var(--color-text-light)] mb-2">Código de la clase:</p>
+              <div className="flex items-center">
+                <span className="text-xl font-bold text-[var(--color-text)]">{clase.code}</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(clase.code);
+                    alert('Código copiado al portapapeles');
+                  }}
+                  className="ml-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+                >
+                  <FiClipboard />
+                </button>
+              </div>
+              <p className="text-xs text-[var(--color-text-light)] mt-2">
+                Comparte este código con tus alumnos para que puedan unirse a la clase
+              </p>
+            </div>
+          </div>
+        </div>
+        
         {isProfesor && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <button
@@ -381,7 +406,20 @@ export default function DetalleClasePage({ params }) {
             </div>
             <div className="bg-[var(--color-background-light)] p-4 rounded-md">
               <p className="text-sm font-medium text-[var(--color-text-light)] mb-1">Asistencia promedio:</p>
-              <p className="text-2xl font-bold text-[var(--color-text)]">
+              <p className={`text-2xl font-bold ${(() => {
+                const asistencia = tipoAsistencia === 'todas' 
+                  ? estadisticas.asistenciaPromedio 
+                  : tipoAsistencia === 'ultima' 
+                    ? estadisticas.asistenciaUltimaSesion 
+                    : tipoAsistencia === 'fecha' && fechaSeleccionada 
+                      ? Math.min(100, Math.round((estadisticas.asistenciasPorFecha?.[fechaSeleccionada] || 0) / clase.students.length * 100)) 
+                      : estadisticas.asistenciaPromedio;
+                return asistencia < 50 
+                  ? 'text-red-500' 
+                  : asistencia < 75 
+                    ? 'text-yellow-500' 
+                    : 'text-green-500';
+              })()}`}>
                 {(() => {
                   if (tipoAsistencia === 'todas') {
                     return estadisticas.asistenciaPromedio;

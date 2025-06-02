@@ -34,20 +34,43 @@ export async function GET() {
     // Calcular tasa de asistencia global
     let attendanceRate = 0;
     if (classIds.length > 0) {
-      // Contar asistencias marcadas como presentes
-      const totalAttendances = await Attendance.countDocuments({
-        class: { $in: classIds },
-        presente: { $ne: false } // Solo contar asistencias marcadas como presentes
-      });
-
-      const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-      const totalPossibleAttendances = await User.countDocuments({
-        classes: { $in: classIds },
-        role: 'alumno'
-      }) * classes.length; // Simplificación: cada estudiante debería asistir a cada clase una vez
-
-      attendanceRate = totalPossibleAttendances > 0 
-        ? Math.min(100, Math.round((totalAttendances / totalPossibleAttendances) * 100))
+      // Obtener todas las asistencias agrupadas por clase y fecha para calcular correctamente
+      const attendanceStats = await Attendance.aggregate([
+        {
+          $match: {
+            class: { $in: classIds },
+            presente: { $ne: false } // Solo contar asistencias marcadas como presentes
+          }
+        },
+        {
+          $group: {
+            _id: {
+              class: '$class',
+              date: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }
+            },
+            attendedCount: { $sum: 1 }
+          }
+        }
+      ]);
+      
+      // Para cada clase y fecha, calcular la tasa de asistencia
+      let totalAttendedCount = 0;
+      let totalStudentsCount = 0;
+      
+      // Procesar cada sesión (clase + fecha)
+      await Promise.all(attendanceStats.map(async (stat) => {
+        const classInfo = await Class.findById(stat._id.class);
+        if (classInfo && classInfo.students) {
+          // Contar estudiantes que asistieron a esta sesión
+          totalAttendedCount += stat.attendedCount;
+          // Contar el total de estudiantes que deberían haber asistido
+          totalStudentsCount += classInfo.students.length;
+        }
+      }));
+      
+      // Calcular la tasa de asistencia global como porcentaje de asistencias sobre el total posible
+      attendanceRate = totalStudentsCount > 0 
+        ? Math.min(100, Math.round((totalAttendedCount / totalStudentsCount) * 100))
         : 0;
     }
 
