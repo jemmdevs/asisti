@@ -58,9 +58,12 @@ export default function Navbar() {
                 )}
                 <div className="relative ml-3">
                   <div className="flex items-center">
-                    <span className="text-sm font-medium text-[var(--color-text-light)] mr-3">
-                      {session.user.name}
-                    </span>
+                    <Link href="/perfil" className="flex items-center hover:text-[var(--color-primary)]">
+                      <FiUser className="h-5 w-5 mr-2 text-[var(--color-text-light)]" />
+                      <span className="text-sm font-medium text-[var(--color-text-light)] mr-3 hover:text-[var(--color-primary)]">
+                        {session.user.name}
+                      </span>
+                    </Link>
                     <button
                       onClick={handleSignOut}
                       className="p-2 rounded-full text-[var(--color-text-light)] hover:bg-[var(--color-background-dark)]"
@@ -140,10 +143,18 @@ export default function Navbar() {
                     </div>
                   </div>
                   <div className="mt-3 px-2 space-y-1">
+                    <Link 
+                      href="/perfil" 
+                      className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-[var(--color-text)] hover:bg-[var(--color-background-dark)] flex items-center"
+                    >
+                      <FiUser className="mr-2" />
+                      Mi Perfil
+                    </Link>
                     <button
                       onClick={handleSignOut}
-                      className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-[var(--color-text)] hover:bg-[var(--color-background-dark)]"
+                      className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-[var(--color-text)] hover:bg-[var(--color-background-dark)] flex items-center"
                     >
+                      <FiLogOut className="mr-2" />
                       Cerrar Sesión
                     </button>
                   </div>
