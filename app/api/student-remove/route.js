@@ -9,7 +9,7 @@ import { ObjectId } from 'mongodb';
 export const dynamic = 'force-dynamic';
 
 // Endpoint para eliminar un alumno de una clase
-export async function DELETE(request, { params }) {
+export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -29,10 +29,19 @@ export async function DELETE(request, { params }) {
       );
     }
     
-    const { id, studentId } = params;
+    // Obtener datos del cuerpo de la solicitud
+    const data = await request.json();
+    const { classId, studentId } = data;
+    
+    if (!classId || !studentId) {
+      return NextResponse.json(
+        { message: 'ID de clase y alumno son requeridos' },
+        { status: 400 }
+      );
+    }
     
     // Validar IDs
-    if (!ObjectId.isValid(id) || !ObjectId.isValid(studentId)) {
+    if (!ObjectId.isValid(classId) || !ObjectId.isValid(studentId)) {
       return NextResponse.json(
         { message: 'ID de clase o alumno inválido' },
         { status: 400 }
@@ -44,7 +53,7 @@ export async function DELETE(request, { params }) {
     
     // Verificar que la clase exista y pertenezca al profesor
     const clase = await db.collection('classes').findOne({
-      _id: new ObjectId(id),
+      _id: new ObjectId(classId),
       'teacher._id': session.user.id.toString()
     });
     
@@ -69,7 +78,7 @@ export async function DELETE(request, { params }) {
     
     // Eliminar al alumno de la clase
     const result = await db.collection('classes').updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new ObjectId(classId) },
       { $pull: { students: { _id: new ObjectId(studentId) } } }
     );
     

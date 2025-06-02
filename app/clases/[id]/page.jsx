@@ -134,8 +134,15 @@ export default function DetalleClasePage({ params }) {
     if (!selectedStudent) return;
     
     try {
-      const response = await fetch(`/api/clases/${id}/students/${selectedStudent._id}`, {
-        method: 'DELETE',
+      const response = await fetch(`/api/student-remove`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classId: id,
+          studentId: selectedStudent._id
+        }),
       });
       
       if (!response.ok) {

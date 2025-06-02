@@ -214,12 +214,13 @@ export default function HistorialAsistenciaPage() {
     try {
       setCambiandoAsistencia(true);
       
-      const response = await fetch(`/api/asistencia/${asistenciaId}`, {
+      const response = await fetch(`/api/asistencia-update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
+          id: asistenciaId,
           presente: !estadoActual 
         }),
       });

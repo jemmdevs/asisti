@@ -9,7 +9,7 @@ import { ObjectId } from 'mongodb';
 export const dynamic = 'force-dynamic';
 
 // Endpoint para actualizar el estado de asistencia
-export async function PATCH(request, { params }) {
+export async function PATCH(request) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -29,22 +29,21 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    const { id } = params;
+    // Obtener datos del cuerpo de la solicitud
+    const data = await request.json();
+    const { id, presente } = data;
+    
+    if (!id || presente === undefined) {
+      return NextResponse.json(
+        { message: 'ID de asistencia y estado son requeridos' },
+        { status: 400 }
+      );
+    }
     
     // Validar ID
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { message: 'ID de asistencia inválido' },
-        { status: 400 }
-      );
-    }
-    
-    // Obtener datos del cuerpo de la solicitud
-    const { presente } = await request.json();
-    
-    if (presente === undefined) {
-      return NextResponse.json(
-        { message: 'El estado de asistencia es requerido' },
         { status: 400 }
       );
     }
