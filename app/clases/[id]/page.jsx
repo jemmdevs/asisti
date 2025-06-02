@@ -78,8 +78,9 @@ export default function DetalleClasePage({ params }) {
       // Calcular estadísticas
       const asistencias = data.asistencias || [];
       const totalSesiones = data.total || 0;
+      // Asegurarnos de que el porcentaje nunca supere el 100%
       const asistenciaPromedio = totalSesiones > 0 
-        ? Math.round((asistencias.length / totalSesiones) * 100) 
+        ? Math.min(100, Math.round((asistencias.filter(a => a.presente !== false).length / totalSesiones) * 100)) 
         : 0;
       
       // Encontrar la última sesión

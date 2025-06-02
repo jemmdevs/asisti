@@ -141,13 +141,17 @@ export default function HistorialAsistenciaPage() {
       setAsistencias(data.asistencias || []);
       
       // Calcular estadísticas
-      const total = data.total || 0;
-      const asistencias = data.asistencias?.length || 0;
-      const faltas = total - asistencias;
-      const porcentaje = total > 0 ? Math.round((asistencias / total) * 100) : 0;
+      // El total debe ser el número de registros de asistencia posibles (días de clase × alumnos)
+      // y no el número de registros existentes
+      const registrosExistentes = data.asistencias?.length || 0;
+      const totalPosiblesRegistros = data.total || registrosExistentes; // Usar el total de la API o el número de registros si no hay total
+      const asistencias = data.asistencias?.filter(a => a.presente !== false)?.length || 0;
+      const faltas = registrosExistentes - asistencias;
+      // Asegurarnos de que el porcentaje nunca supere el 100%
+      const porcentaje = totalPosiblesRegistros > 0 ? Math.min(100, Math.round((asistencias / totalPosiblesRegistros) * 100)) : 0;
       
       setEstadisticas({
-        total,
+        total: totalPosiblesRegistros,
         asistencias,
         faltas,
         porcentaje
@@ -205,7 +209,7 @@ export default function HistorialAsistenciaPage() {
   };
 
   const toggleAsistencia = async (asistenciaId, estadoActual) => {
-    if (!session?.user?.role === 'profesor' || cambiandoAsistencia) return;
+    if (session?.user?.role !== 'profesor' || cambiandoAsistencia) return;
     
     try {
       setCambiandoAsistencia(true);
@@ -234,18 +238,20 @@ export default function HistorialAsistenciaPage() {
       
       // Actualizar estadísticas
       if (estadoActual) { // Si estaba presente y ahora no
+        const nuevasAsistencias = estadisticas.asistencias - 1;
         setEstadisticas({
           ...estadisticas,
-          asistencias: estadisticas.asistencias - 1,
+          asistencias: nuevasAsistencias,
           faltas: estadisticas.faltas + 1,
-          porcentaje: Math.round(((estadisticas.asistencias - 1) / estadisticas.total) * 100)
+          porcentaje: estadisticas.total > 0 ? Math.min(100, Math.round((nuevasAsistencias / estadisticas.total) * 100)) : 0
         });
       } else { // Si estaba ausente y ahora presente
+        const nuevasAsistencias = estadisticas.asistencias + 1;
         setEstadisticas({
           ...estadisticas,
-          asistencias: estadisticas.asistencias + 1,
+          asistencias: nuevasAsistencias,
           faltas: estadisticas.faltas - 1,
-          porcentaje: Math.round(((estadisticas.asistencias + 1) / estadisticas.total) * 100)
+          porcentaje: estadisticas.total > 0 ? Math.min(100, Math.round((nuevasAsistencias / estadisticas.total) * 100)) : 0
         });
       }
       

@@ -64,7 +64,7 @@ export async function PATCH(request, { params }) {
     // Verificar que el profesor tenga permisos para modificar esta asistencia
     const clase = await db.collection('classes').findOne({
       _id: new ObjectId(asistencia.classId),
-      'teacher._id': session.user.id
+      'teacher._id': session.user.id.toString()
     });
     
     if (!clase) {

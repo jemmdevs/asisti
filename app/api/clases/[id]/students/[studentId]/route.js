@@ -42,7 +42,7 @@ export async function DELETE(request, { params }) {
     // Verificar que la clase exista y pertenezca al profesor
     const clase = await db.collection('classes').findOne({
       _id: new ObjectId(id),
-      'teacher._id': session.user.id
+      'teacher._id': session.user.id.toString()
     });
     
     if (!clase) {
