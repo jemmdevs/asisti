@@ -245,7 +245,9 @@ export default function DetalleClasePage({ params }) {
               <span>{alumnos.length} {alumnos.length === 1 ? 'alumno' : 'alumnos'}</span>
             </div>
           </div>
+
           
+          {/* hola xd */}
           <div className="mt-4 md:mt-0">
             <div className="bg-[var(--color-background-light)] p-4 rounded-md">
               <p className="text-sm font-medium text-[var(--color-text-light)] mb-2">Código de la clase:</p>
