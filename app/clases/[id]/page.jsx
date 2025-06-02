@@ -18,8 +18,11 @@ export default function DetalleClasePage({ params }) {
   const [estadisticas, setEstadisticas] = useState({
     totalSesiones: 0,
     asistenciaPromedio: 0,
+    asistenciaUltimaSesion: 0,
     ultimaSesion: null
   });
+  const [tipoAsistencia, setTipoAsistencia] = useState('todas'); // 'todas', 'ultima', 'fecha'
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(null);
   const [sesiones, setSesiones] = useState([]);
   const [sesionesAgrupadas, setSesionesAgrupadas] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -79,23 +82,72 @@ export default function DetalleClasePage({ params }) {
       
       // Calcular estadísticas
       const asistencias = data.asistencias || [];
-      const totalSesiones = data.total || 0;
-      // Asegurarnos de que el porcentaje nunca supere el 100%
-      const asistenciaPromedio = totalSesiones > 0 
-        ? Math.min(100, Math.round((asistencias.filter(a => a.presente !== false).length / totalSesiones) * 100)) 
+      
+      // Ordenar asistencias por fecha (más reciente primero)
+      asistencias.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Obtener fechas únicas de sesiones
+      const fechasUnicas = [...new Set(asistencias.map(a => 
+        new Date(a.date).toISOString().split('T')[0]
+      ))];
+      
+      const totalSesiones = fechasUnicas.length || 0;
+      
+      // Calcular asistencia promedio de todas las sesiones
+      // Primero agrupamos por fecha para calcular correctamente
+      const asistenciasPorFecha = {};
+      const estudiantesPorFecha = {};
+      
+      // Inicializar contadores por fecha
+      fechasUnicas.forEach(fecha => {
+        asistenciasPorFecha[fecha] = 0;
+        estudiantesPorFecha[fecha] = 0;
+      });
+      
+      // Contar asistencias por fecha
+      asistencias.forEach(asistencia => {
+        const fecha = new Date(asistencia.date).toISOString().split('T')[0];
+        if (asistencia.presente !== false) {
+          asistenciasPorFecha[fecha]++;
+        }
+        estudiantesPorFecha[fecha]++;
+      });
+      
+      // Calcular promedio total (todas las fechas)
+      let totalAsistencias = 0;
+      let totalPosibles = 0;
+      
+      Object.keys(asistenciasPorFecha).forEach(fecha => {
+        totalAsistencias += asistenciasPorFecha[fecha];
+        totalPosibles += clase.students.length; // Usar el total de estudiantes inscritos
+      });
+      
+      const asistenciaPromedio = totalPosibles > 0 
+        ? Math.min(100, Math.round((totalAsistencias / totalPosibles) * 100)) 
         : 0;
       
-      // Encontrar la última sesión
+      // Calcular asistencia de la última sesión
+      let asistenciaUltimaSesion = 0;
       let ultimaSesion = null;
-      if (asistencias.length > 0) {
-        asistencias.sort((a, b) => new Date(b.date) - new Date(a.date));
-        ultimaSesion = asistencias[0].date;
+      
+      if (fechasUnicas.length > 0) {
+        ultimaSesion = fechasUnicas[0];
+        const asistenciasUltimaSesion = asistenciasPorFecha[ultimaSesion] || 0;
+        const totalEstudiantesClase = clase.students.length;
+        
+        asistenciaUltimaSesion = totalEstudiantesClase > 0
+          ? Math.min(100, Math.round((asistenciasUltimaSesion / totalEstudiantesClase) * 100))
+          : 0;
       }
       
       setEstadisticas({
         totalSesiones,
         asistenciaPromedio,
-        ultimaSesion
+        asistenciaUltimaSesion,
+        ultimaSesion,
+        fechasUnicas,
+        asistenciasPorFecha,
+        estudiantesPorFecha
       });
       
       // Guardar las asistencias para mostrarlas
@@ -264,33 +316,6 @@ export default function DetalleClasePage({ params }) {
             <div className="flex items-center text-[var(--color-text-light)]">
               <FiUsers className="mr-2" />
               <span>{alumnos.length} {alumnos.length === 1 ? 'alumno' : 'alumnos'}</span>
-            </div>
-          </div>
-
-          
-          {/* hola xd */}
-          <div className="mt-4 md:mt-0">
-            <div className="bg-[var(--color-background-light)] p-4 rounded-md">
-              <p className="text-sm font-medium text-[var(--color-text-light)] mb-2">Código de la clase:</p>
-              <div className="flex items-center">
-                <span className="text-xl font-bold text-[var(--color-text)]">{clase.code}</span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(clase.code);
-                    alert('Código copiado al portapapeles');
-                  }}
-                  className="ml-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
-                >
-                  <FiClipboard />
-                </button>
-              </div>
-              <p className="text-xs text-[var(--color-text-light)] mt-2">
-                Comparte este código con tus alumnos para que puedan unirse a la clase
-              </p>
-            </div>
-          </div>
-        </div>
-        
         {isProfesor && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <button
@@ -312,7 +337,43 @@ export default function DetalleClasePage({ params }) {
         
         {/* Estadísticas */}
         <div className="border-t border-gray-200 pt-6">
-          <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">Estadísticas de Asistencia</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-[var(--color-text)]">Estadísticas de Asistencia</h2>
+            <div className="flex items-center">
+              <label htmlFor="tipoAsistencia" className="text-sm text-[var(--color-text-light)] mr-2">
+                Mostrar asistencia de:
+              </label>
+              <select
+                id="tipoAsistencia"
+                value={tipoAsistencia}
+                onChange={(e) => setTipoAsistencia(e.target.value)}
+                className="text-sm border rounded-md px-2 py-1 text-[var(--color-text)]"
+              >
+                <option value="todas">Todas las sesiones</option>
+                <option value="ultima">Última sesión</option>
+                {estadisticas.fechasUnicas && estadisticas.fechasUnicas.length > 1 && (
+                  <option value="fecha">Sesión específica</option>
+                )}
+              </select>
+            </div>
+          </div>
+          
+          {tipoAsistencia === 'fecha' && (
+            <div className="mb-4">
+              <select
+                value={fechaSeleccionada || (estadisticas.fechasUnicas && estadisticas.fechasUnicas[0])}
+                onChange={(e) => setFechaSeleccionada(e.target.value)}
+                className="w-full text-sm border rounded-md px-2 py-1 text-[var(--color-text)]"
+              >
+                {estadisticas.fechasUnicas && estadisticas.fechasUnicas.map(fecha => (
+                  <option key={fecha} value={fecha}>
+                    {new Date(fecha).toLocaleDateString('es-ES')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-[var(--color-background-light)] p-4 rounded-md">
               <p className="text-sm font-medium text-[var(--color-text-light)] mb-1">Total de sesiones:</p>
@@ -320,7 +381,27 @@ export default function DetalleClasePage({ params }) {
             </div>
             <div className="bg-[var(--color-background-light)] p-4 rounded-md">
               <p className="text-sm font-medium text-[var(--color-text-light)] mb-1">Asistencia promedio:</p>
-              <p className="text-2xl font-bold text-[var(--color-text)]">{estadisticas.asistenciaPromedio}%</p>
+              <p className="text-2xl font-bold text-[var(--color-text)]">
+                {(() => {
+                  if (tipoAsistencia === 'todas') {
+                    return estadisticas.asistenciaPromedio;
+                  } else if (tipoAsistencia === 'ultima') {
+                    return estadisticas.asistenciaUltimaSesion;
+                  } else if (tipoAsistencia === 'fecha' && fechaSeleccionada) {
+                    const asistencias = estadisticas.asistenciasPorFecha?.[fechaSeleccionada] || 0;
+                    const total = clase.students.length;
+                    return total > 0 ? Math.min(100, Math.round((asistencias / total) * 100)) : 0;
+                  } else {
+                    return estadisticas.asistenciaPromedio;
+                  }
+                })()}%
+              </p>
+              <p className="text-xs text-[var(--color-text-light)] mt-1">
+                {tipoAsistencia === 'todas' && 'Basado en todas las sesiones'}
+                {tipoAsistencia === 'ultima' && 'Basado en la última sesión'}
+                {tipoAsistencia === 'fecha' && fechaSeleccionada && 
+                  `Sesión del ${new Date(fechaSeleccionada).toLocaleDateString('es-ES')}`}
+              </p>
             </div>
             <div className="bg-[var(--color-background-light)] p-4 rounded-md">
               <p className="text-sm font-medium text-[var(--color-text-light)] mb-1">Última sesión:</p>
