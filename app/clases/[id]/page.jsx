@@ -20,9 +20,10 @@ export default function DetalleClasePage({ params }) {
     asistenciaPromedio: 0,
     ultimaSesion: null
   });
+  const [sesiones, setSesiones] = useState([]);
+  const [sesionesAgrupadas, setSesionesAgrupadas] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDeleteStudentModal, setShowDeleteStudentModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  // Eliminada funcionalidad de eliminar alumnos
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -95,6 +96,21 @@ export default function DetalleClasePage({ params }) {
         asistenciaPromedio,
         ultimaSesion
       });
+      
+      // Guardar las asistencias para mostrarlas
+      setSesiones(asistencias);
+      
+      // Agrupar asistencias por fecha para mostrar sesiones
+      const sesionesAgrupadas = {};
+      asistencias.forEach(asistencia => {
+        const fecha = new Date(asistencia.date).toLocaleDateString('es-ES');
+        if (!sesionesAgrupadas[fecha]) {
+          sesionesAgrupadas[fecha] = [];
+        }
+        sesionesAgrupadas[fecha].push(asistencia);
+      });
+      
+      setSesionesAgrupadas(sesionesAgrupadas);
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
     }
@@ -125,41 +141,7 @@ export default function DetalleClasePage({ params }) {
     router.push(`/asistencia/historial?clase=${id}`);
   };
 
-  const handleRemoveStudent = (student) => {
-    setSelectedStudent(student);
-    setShowDeleteStudentModal(true);
-  };
-
-  const confirmRemoveStudent = async () => {
-    if (!selectedStudent) return;
-    
-    try {
-      const response = await fetch(`/api/student-remove`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          classId: id,
-          studentId: selectedStudent._id
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al eliminar al alumno de la clase');
-      }
-      
-      // Actualizar la lista de alumnos
-      setAlumnos(alumnos.filter(a => a._id !== selectedStudent._id));
-      setSuccessMessage(`${selectedStudent.name} ha sido eliminado de la clase`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-      setShowDeleteStudentModal(false);
-      setSelectedStudent(null);
-    } catch (error) {
-      console.error('Error al eliminar alumno:', error);
-      setError(error.message);
-    }
-  };
+  // Eliminada funcionalidad de eliminar alumnos
 
   if (status === 'loading' || loading) {
     return (
@@ -311,6 +293,82 @@ export default function DetalleClasePage({ params }) {
             </div>
           </div>
         </div>
+        
+        {/* Sesiones de asistencia */}
+        {Object.keys(sesionesAgrupadas).length > 0 && (
+          <div className="border-t border-gray-200 pt-6 mt-6">
+            <h2 className="text-xl font-bold text-[var(--color-text)] mb-4">Sesiones de Asistencia</h2>
+            
+            {Object.keys(sesionesAgrupadas).sort((a, b) => new Date(b) - new Date(a)).map(fecha => {
+              const asistenciasEnFecha = sesionesAgrupadas[fecha];
+              const hora = new Date(asistenciasEnFecha[0].date).toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              
+              // Obtener alumnos presentes en esta sesión
+              const alumnosPresentes = asistenciasEnFecha
+                .filter(a => a.presente !== false)
+                .map(a => a.student?._id || a.student);
+              
+              // Obtener alumnos ausentes (los que no están en alumnosPresentes)
+              const alumnosAusentes = alumnos
+                .filter(alumno => !alumnosPresentes.includes(alumno._id));
+              
+              return (
+                <div key={fecha} className="mb-6 bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-[var(--color-text)]">
+                      Sesión del {fecha} - {hora}
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Alumnos presentes */}
+                    <div>
+                      <h4 className="text-md font-medium text-[var(--color-text)] mb-2">Alumnos Presentes ({alumnosPresentes.length})</h4>
+                      {alumnosPresentes.length > 0 ? (
+                        <ul className="space-y-2">
+                          {asistenciasEnFecha
+                            .filter(a => a.presente !== false)
+                            .map(asistencia => {
+                              const alumnoId = asistencia.student?._id || asistencia.student;
+                              const alumno = alumnos.find(a => a._id === alumnoId);
+                              return (
+                                <li key={alumnoId} className="flex items-center">
+                                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                  <span className="text-[var(--color-text)]">{alumno?.name || 'Alumno desconocido'}</span>
+                                </li>
+                              );
+                            })}
+                        </ul>
+                      ) : (
+                        <p className="text-[var(--color-text-light)] italic">Ningún alumno presente</p>
+                      )}
+                    </div>
+                    
+                    {/* Alumnos ausentes */}
+                    <div>
+                      <h4 className="text-md font-medium text-[var(--color-text)] mb-2">Alumnos Ausentes ({alumnosAusentes.length})</h4>
+                      {alumnosAusentes.length > 0 ? (
+                        <ul className="space-y-2">
+                          {alumnosAusentes.map(alumno => (
+                            <li key={alumno._id} className="flex items-center">
+                              <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                              <span className="text-[var(--color-text)]">{alumno.name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-[var(--color-text-light)] italic">Todos los alumnos presentes</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       
       {/* Mensaje de éxito */}
@@ -366,15 +424,7 @@ export default function DetalleClasePage({ params }) {
                             Ver asistencia
                           </Link>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-light)]">
-                          <button
-                            onClick={() => handleRemoveStudent(alumno)}
-                            className="text-red-500 hover:text-red-700"
-                            title="Eliminar alumno de la clase"
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </td>
+                        {/* Eliminada funcionalidad de eliminar alumnos */}
                       </>
                     )}
                   </tr>
@@ -420,35 +470,7 @@ export default function DetalleClasePage({ params }) {
         </div>
       )}
       
-      {/* Modal de confirmación para eliminar alumno */}
-      {showDeleteStudentModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-[var(--color-text)] mb-4">¿Eliminar alumno de la clase?</h3>
-            <p className="text-[var(--color-text-light)] mb-6">
-              ¿Estás seguro de que deseas eliminar a <strong>{selectedStudent.name}</strong> de esta clase? 
-              El alumno perderá acceso a la clase y sus registros de asistencia se mantendrán en el historial.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowDeleteStudentModal(false);
-                  setSelectedStudent(null);
-                }}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmRemoveStudent}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Eliminada funcionalidad de eliminar alumno */}
     </div>
   );
 }

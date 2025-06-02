@@ -28,7 +28,7 @@ export default function HistorialAsistenciaPage() {
     faltas: 0,
     porcentaje: 0
   });
-  const [cambiandoAsistencia, setCambiandoAsistencia] = useState(false);
+  // Eliminada funcionalidad de cambiar estado de asistencia
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -208,63 +208,7 @@ export default function HistorialAsistenciaPage() {
     document.body.removeChild(link);
   };
 
-  const toggleAsistencia = async (asistenciaId, estadoActual) => {
-    if (session?.user?.role !== 'profesor' || cambiandoAsistencia) return;
-    
-    try {
-      setCambiandoAsistencia(true);
-      
-      const response = await fetch(`/api/asistencia-update`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          id: asistenciaId,
-          presente: !estadoActual 
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al cambiar el estado de asistencia');
-      }
-      
-      // Actualizar la lista de asistencias
-      setAsistencias(asistencias.map(a => {
-        if (a._id === asistenciaId) {
-          return { ...a, presente: !estadoActual };
-        }
-        return a;
-      }));
-      
-      // Actualizar estadísticas
-      if (estadoActual) { // Si estaba presente y ahora no
-        const nuevasAsistencias = estadisticas.asistencias - 1;
-        setEstadisticas({
-          ...estadisticas,
-          asistencias: nuevasAsistencias,
-          faltas: estadisticas.faltas + 1,
-          porcentaje: estadisticas.total > 0 ? Math.min(100, Math.round((nuevasAsistencias / estadisticas.total) * 100)) : 0
-        });
-      } else { // Si estaba ausente y ahora presente
-        const nuevasAsistencias = estadisticas.asistencias + 1;
-        setEstadisticas({
-          ...estadisticas,
-          asistencias: nuevasAsistencias,
-          faltas: estadisticas.faltas - 1,
-          porcentaje: estadisticas.total > 0 ? Math.min(100, Math.round((nuevasAsistencias / estadisticas.total) * 100)) : 0
-        });
-      }
-      
-      setSuccessMessage(`Estado de asistencia actualizado correctamente`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      console.error('Error al cambiar estado de asistencia:', error);
-      setError(error.message);
-    } finally {
-      setCambiandoAsistencia(false);
-    }
-  };
+  // Eliminada funcionalidad de cambiar estado de asistencia
 
   if (status === 'loading' || (loading && !asistencias.length)) {
     return (
@@ -509,32 +453,14 @@ export default function HistorialAsistenciaPage() {
                               <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                 Asistió
                               </span>
-                              {session?.user?.role === 'profesor' && (
-                                <button 
-                                  onClick={() => toggleAsistencia(asistencia._id, true)}
-                                  disabled={cambiandoAsistencia}
-                                  className="text-red-500 hover:text-red-700 disabled:opacity-50"
-                                  title="Marcar como ausente"
-                                >
-                                  <FiX className="w-4 h-4" />
-                                </button>
-                              )}
+                              {/* Eliminada funcionalidad de cambiar estado de asistencia */}
                             </div>
                           ) : (
                             <div className="flex items-center space-x-2">
                               <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                                 Ausente
                               </span>
-                              {session?.user?.role === 'profesor' && (
-                                <button 
-                                  onClick={() => toggleAsistencia(asistencia._id, false)}
-                                  disabled={cambiandoAsistencia}
-                                  className="text-green-500 hover:text-green-700 disabled:opacity-50"
-                                  title="Marcar como presente"
-                                >
-                                  <FiCheck className="w-4 h-4" />
-                                </button>
-                              )}
+                              {/* Eliminada funcionalidad de cambiar estado de asistencia */}
                             </div>
                           )}
                         </td>
