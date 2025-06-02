@@ -23,6 +23,7 @@ export default function DetalleClasePage({ params }) {
   const [sesiones, setSesiones] = useState([]);
   const [sesionesAgrupadas, setSesionesAgrupadas] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   // Eliminada funcionalidad de eliminar alumnos
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -182,11 +183,39 @@ export default function DetalleClasePage({ params }) {
   }
 
   const isProfesor = session?.user?.role === 'profesor' && clase.teacher?._id === session.user.id;
+  const isAlumno = session?.user?.role === 'alumno';
+  
+  // Función para que un alumno salga de la clase
+  const handleLeaveClass = async () => {
+    try {
+      const response = await fetch('/api/clases/leave', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classId: id
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al salir de la clase');
+      }
+      
+      setSuccessMessage('Has salido de la clase correctamente');
+      setTimeout(() => {
+        router.push('/mis-clases');
+      }, 2000);
+    } catch (error) {
+      console.error('Error al salir de la clase:', error);
+      setError(error.message);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex justify-between items-center">
-        <Link href="/clases" className="flex items-center text-[var(--color-primary-dark)] hover:underline">
+        <Link href={isProfesor ? "/clases" : "/mis-clases"} className="flex items-center text-[var(--color-primary-dark)] hover:underline">
           <FiArrowLeft className="mr-2" />
           Volver a mis clases
         </Link>
@@ -208,6 +237,16 @@ export default function DetalleClasePage({ params }) {
               Eliminar
             </button>
           </div>
+        )}
+        
+        {isAlumno && (
+          <button
+            onClick={() => setShowLeaveModal(true)}
+            className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            <FiTrash2 className="mr-2" />
+            Salir de la clase
+          </button>
         )}
       </div>
       
@@ -471,6 +510,33 @@ export default function DetalleClasePage({ params }) {
       )}
       
       {/* Eliminada funcionalidad de eliminar alumno */}
+      
+      {/* Modal de confirmación para salir de la clase */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-[var(--color-text)] mb-4">¿Salir de esta clase?</h3>
+            <p className="text-[var(--color-text-light)] mb-6">
+              ¿Estás seguro de que deseas salir de esta clase? 
+              Perderás acceso a los materiales y registros de asistencia.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleLeaveClass}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

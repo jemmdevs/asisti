@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MobileNavbar from "@/components/MobileNavbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,9 +28,10 @@ export default function RootLayout({ children }) {
       >
         <Providers>
           <Navbar />
-          <main className="flex-grow">
+          <main className="flex-grow pb-16 md:pb-0"> {/* Añadir padding-bottom para la barra móvil */}
             {children}
           </main>
+          <MobileNavbar />
           <Footer />
         </Providers>
       </body>

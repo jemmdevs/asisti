@@ -34,8 +34,10 @@ export async function GET() {
     // Calcular tasa de asistencia global
     let attendanceRate = 0;
     if (classIds.length > 0) {
+      // Contar asistencias marcadas como presentes
       const totalAttendances = await Attendance.countDocuments({
-        class: { $in: classIds }
+        class: { $in: classIds },
+        presente: { $ne: false } // Solo contar asistencias marcadas como presentes
       });
 
       const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
@@ -45,7 +47,7 @@ export async function GET() {
       }) * classes.length; // Simplificación: cada estudiante debería asistir a cada clase una vez
 
       attendanceRate = totalPossibleAttendances > 0 
-        ? Math.round((totalAttendances / totalPossibleAttendances) * 100) 
+        ? Math.min(100, Math.round((totalAttendances / totalPossibleAttendances) * 100))
         : 0;
     }
 
@@ -57,7 +59,8 @@ export async function GET() {
       {
         $match: {
           class: { $in: classIds },
-          date: { $gte: sevenDaysAgo }
+          date: { $gte: sevenDaysAgo },
+          presente: { $ne: false } // Solo contar asistencias marcadas como presentes
         }
       },
       {
@@ -88,7 +91,7 @@ export async function GET() {
           date: attendance._id.date,
           attendedCount: attendance.attendedCount,
           totalStudents,
-          rate: totalStudents > 0 ? Math.round((attendance.attendedCount / totalStudents) * 100) : 0
+          rate: totalStudents > 0 ? Math.min(100, Math.round((attendance.attendedCount / totalStudents) * 100)) : 0
         };
       })
     );
